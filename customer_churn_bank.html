@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI 銀行客戶流失預測系統</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f6f9; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        .card { border: none; box-shadow: 0 4px 6px rgba(0,0,0,0.1); border-radius: 10px; margin-bottom: 20px; }
+        .card-header { background-color: #fff; border-bottom: 1px solid #eee; font-weight: 600; color: #2c3e50; }
+        .nav-tabs .nav-link { color: #495057; border: none; border-bottom: 3px solid transparent; }
+        .nav-tabs .nav-link.active { color: #0d6efd; border-bottom: 3px solid #0d6efd; background: none; font-weight: bold; }
+        .result-box { display: none; margin-top: 20px; }
+        .chart-container img { max-width: 100%; height: auto; border-radius: 8px; border: 1px solid #ddd; margin-bottom: 15px; }
+        .prediction-score { font-size: 2.5rem; font-weight: bold; }
+        .high-risk { color: #dc3545; }
+        .low-risk { color: #198754; }
+        .loading-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(255,255,255,0.8); z-index: 9999; display: none;
+            justify-content: center; align-items: center; flex-direction: column;
+        }
+        .ai-explanation { background-color: #f8f9fa; border-left: 4px solid #0d6efd; padding: 15px; border-radius: 4px; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+
+<div class="loading-overlay" id="loadingOverlay">
+    <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
+    <div class="mt-2 fw-bold text-primary">AI 正在分析中，請稍候...</div>
+</div>
+
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-10">
+            <div class="text-center mb-4">
+                <h1 class="display-5 fw-bold text-primary"><i class="fas fa-university me-2"></i>AI 銀行客戶流失預測系統</h1>
+                <p class="lead text-muted">結合機器學習與生成式 AI 的智能決策平台</p>
+            </div>
+
+            <div class="card bg-light mb-4 border-primary border-opacity-25">
+                <div class="card-body py-3">
+                    <div class="row align-items-center">
+                        <div class="col-md-auto">
+                            <i class="fas fa-key text-primary fs-4"></i>
+                        </div>
+                        <div class="col">
+                            <div class="input-group">
+                                <span class="input-group-text bg-white">Gemini API Key</span>
+                                <input type="password" id="apiKeyInput" class="form-control" placeholder="若後端未設定 Key，請在此輸入 (例: AIzaSy...)">
+                                <button class="btn btn-primary" type="button" id="saveKeyBtn">
+                                    <i class="fas fa-save me-1"></i> 確認設定
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <ul class="nav nav-tabs mb-4" id="predictionTab" role="tablist">
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link active" id="single-tab" data-bs-toggle="tab" data-bs-target="#single" type="button" role="tab"><i class="fas fa-user me-2"></i>單筆預測 & AI 解釋</button>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <button class="nav-link" id="batch-tab" data-bs-toggle="tab" data-bs-target="#batch" type="button" role="tab"><i class="fas fa-file-csv me-2"></i>批次 ROI 分析</button>
+                </li>
+            </ul>
+
+            <div class="tab-content" id="predictionTabContent">
+                
+                <div class="tab-pane fade show active" id="single" role="tabpanel">
+                    <div class="row">
+                        <div class="col-md-4">
+                            <div class="card">
+                                <div class="card-header"><i class="fas fa-edit me-2"></i>客戶特徵輸入</div>
+                                <div class="card-body">
+                                    <form id="singlePredictionForm">
+                                        <div class="mb-3">
+                                            <label class="form-label">信用分數 (CreditScore)</label>
+                                            <input type="number" class="form-control" name="CreditScore" value="650" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">地區 (Geography)</label>
+                                            <select class="form-select" name="Geography">
+                                                <option value="France">France</option>
+                                                <option value="Germany">Germany</option>
+                                                <option value="Spain">Spain</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">性別 (Gender)</label>
+                                            <select class="form-select" name="Gender">
+                                                <option value="Male">Male</option>
+                                                <option value="Female">Female</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">年齡 (Age)</label>
+                                            <input type="number" class="form-control" name="Age" value="40" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">往來年資 (Tenure)</label>
+                                            <input type="number" class="form-control" name="Tenure" value="5" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">帳戶餘額 (Balance)</label>
+                                            <input type="number" class="form-control" name="Balance" value="50000" step="0.01" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">產品數量 (NumOfProducts)</label>
+                                            <input type="number" class="form-control" name="NumOfProducts" value="2" required>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">持有信用卡 (HasCrCard)</label>
+                                            <select class="form-select" name="HasCrCard">
+                                                <option value="1">是 (Yes)</option>
+                                                <option value="0">否 (No)</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">活躍成員 (IsActiveMember)</label>
+                                            <select class="form-select" name="IsActiveMember">
+                                                <option value="1">是 (Yes)</option>
+                                                <option value="0">否 (No)</option>
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label class="form-label">預估薪資 (EstimatedSalary)</label>
+                                            <input type="number" class="form-control" name="EstimatedSalary" value="100000" step="0.01" required>
+                                        </div>
+                                        <div class="d-grid">
+                                            <button type="submit" class="btn btn-primary btn-lg"><i class="fas fa-magic me-2"></i>開始預測</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="col-md-8">
+                            <div id="singleResult" class="result-box">
+                                <div class="card">
+                                    <div class="card-body text-center">
+                                        <h5 class="text-muted mb-3">流失機率預測</h5>
+                                        <div id="churnScore" class="prediction-score">--%</div>
+                                        <div class="progress mt-3" style="height: 25px;">
+                                            <div id="churnProgress" class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%"></div>
+                                        </div>
+                                        <p id="churnVerdict" class="mt-2 fw-bold"></p>
+                                    </div>
+                                </div>
+
+                                <div class="card border-info">
+                                    <div class="card-header bg-info text-white"><i class="fas fa-chart-line me-2"></i>ROI 商業價值分析</div>
+                                    <div class="card-body">
+                                        <div id="roiContent" class="row">
+                                            </div>
+                                    </div>
+                                </div>
+
+                                <div class="card border-warning">
+                                    <div class="card-header bg-warning text-dark"><i class="fas fa-robot me-2"></i>Gemini AI 洞察報告</div>
+                                    <div class="card-body">
+                                        <div id="aiExplanation" class="ai-explanation">
+                                            </div>
+                                    </div>
+                                </div>
+
+                                <div class="card">
+                                    <div class="card-header"><i class="fas fa-image me-2"></i>特徵影響力 (SHAP Values)</div>
+                                    <div class="card-body text-center">
+                                        <div id="chartsContainer">
+                                            </div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div id="defaultPrompt" class="text-center py-5 text-muted">
+                                <i class="fas fa-arrow-left fa-3x mb-3"></i>
+                                <h4>請填寫左側表單並點擊預測</h4>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="tab-pane fade" id="batch" role="tabpanel">
+                    <div class="card">
+                        <div class="card-body">
+                            <h4 class="card-title mb-4">上傳客戶 CSV 檔案</h4>
+                            <form id="batchForm">
+                                <div class="input-group mb-3">
+                                    <input type="file" class="form-control" id="csvFile" name="file" accept=".csv" required>
+                                    <button class="btn btn-success" type="submit"><i class="fas fa-upload me-2"></i>上傳並分析 ROI</button>
+                                </div>
+                                <small class="text-muted">檔案必須包含訓練時的欄位 (CreditScore, Geography, Gender, Age, Tenure, Balance, NumOfProducts, HasCrCard, IsActiveMember, EstimatedSalary)。</small>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div id="batchResult" class="result-box">
+                        <div class="card">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <span><i class="fas fa-table me-2"></i>分析結果列表</span>
+                                <span class="badge bg-primary rounded-pill" id="batchCount">0 筆</span>
+                            </div>
+                            <div class="card-body p-0">
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-hover mb-0 align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>ID</th>
+                                                <th>流失機率</th>
+                                                <th>預測結果</th>
+                                                <th>建議策略</th>
+                                                <th>潛在損失</th>
+                                                <th>留存成本</th>
+                                                <th>預期 ROI</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody id="batchTableBody">
+                                            </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+<script>
+    // 定義 API 路徑
+    const API_BASE = '/api/customer_churn_bank';
+
+    // 顯示/隱藏 Loading
+    const toggleLoading = (show) => {
+        document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+    };
+
+    // --- API Key 管理 ---
+    const apiKeyInput = document.getElementById('apiKeyInput');
+    const saveKeyBtn = document.getElementById('saveKeyBtn');
+
+    // 1. 頁面載入時讀取 localStorage
+    window.addEventListener('load', () => {
+        const savedKey = localStorage.getItem('gemini_api_key');
+        if (savedKey) {
+            apiKeyInput.value = savedKey;
+        }
+    });
+
+    // 2. 點擊按鈕時儲存
+    saveKeyBtn.addEventListener('click', () => {
+        const key = apiKeyInput.value.trim();
+        if (key) {
+            localStorage.setItem('gemini_api_key', key);
+            alert('API Key 已儲存於瀏覽器！下次預測時將自動帶入。');
+        } else {
+            localStorage.removeItem('gemini_api_key');
+            alert('API Key 已清除。');
+        }
+    });
+
+    // --- 單筆預測邏輯 ---
+    document.getElementById('singlePredictionForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        toggleLoading(true);
+        document.getElementById('singleResult').style.display = 'none';
+        document.getElementById('defaultPrompt').style.display = 'none';
+
+        // 收集表單數據
+        const formData = new FormData(e.target);
+        const data = Object.fromEntries(formData.entries());
+
+        // 轉換數值型別
+        ['CreditScore', 'Age', 'Tenure', 'Balance', 'NumOfProducts', 'HasCrCard', 'IsActiveMember', 'EstimatedSalary'].forEach(key => {
+            if (data[key]) data[key] = Number(data[key]);
+        });
+
+        // 準備 Headers
+        const headers = { 'Content-Type': 'application/json' };
+        // 🔴 關鍵：從 localStorage 取出 Key 並放入 Header
+        const savedKey = localStorage.getItem('gemini_api_key');
+        if (savedKey) {
+            headers['X-Gemini-API-Key'] = savedKey;
+        }
+
+        try {
+            const response = await fetch(`${API_BASE}/predict`, {
+                method: 'POST',
+                headers: headers,
+                body: JSON.stringify(data)
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.status === 'success') {
+                renderSingleResult(result.data);
+            } else {
+                alert('預測失敗: ' + (result.message || '未知錯誤'));
+            }
+        } catch (error) {
+            console.error(error);
+            alert('系統錯誤，請檢查後端連線。');
+        } finally {
+            toggleLoading(false);
+        }
+    });
+
+    function renderSingleResult(data) {
+        const resultBox = document.getElementById('singleResult');
+        resultBox.style.display = 'block';
+
+        const prob = data.prediction;
+        const percent = (prob * 100).toFixed(2) + '%';
+        const scoreDiv = document.getElementById('churnScore');
+        const progressBar = document.getElementById('churnProgress');
+        const verdictDiv = document.getElementById('churnVerdict');
+
+        scoreDiv.textContent = percent;
+        progressBar.style.width = percent;
+        
+        if (prob > 0.5) {
+            scoreDiv.className = 'prediction-score high-risk';
+            progressBar.className = 'progress-bar bg-danger progress-bar-striped progress-bar-animated';
+            verdictDiv.innerHTML = '<span class="text-danger"><i class="fas fa-exclamation-triangle"></i> 高風險客戶：建議立即採取留存行動</span>';
+        } else {
+            scoreDiv.className = 'prediction-score low-risk';
+            progressBar.className = 'progress-bar bg-success';
+            verdictDiv.innerHTML = '<span class="text-success"><i class="fas fa-check-circle"></i> 低風險客戶：狀態良好</span>';
+        }
+
+        const roiContainer = document.getElementById('roiContent');
+        roiContainer.innerHTML = '';
+        if (data.roi_analysis) {
+            for (const [key, value] of Object.entries(data.roi_analysis)) {
+                const label = key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                const col = document.createElement('div');
+                col.className = 'col-md-6 mb-2';
+                col.innerHTML = `<strong>${label}:</strong> <span class="text-secondary">${value}</span>`;
+                roiContainer.appendChild(col);
+            }
+        } else {
+            roiContainer.innerHTML = '<div class="col-12 text-muted">無 ROI 數據</div>';
+        }
+
+        const explanationDiv = document.getElementById('aiExplanation');
+        explanationDiv.textContent = data.explanation_prompt || "AI 未提供解釋。";
+
+        const chartsContainer = document.getElementById('chartsContainer');
+        chartsContainer.innerHTML = '';
+        if (data.charts && data.charts.length > 0) {
+            data.charts.forEach(chart => {
+                const wrapper = document.createElement('div');
+                wrapper.className = 'mb-4';
+                
+                const title = document.createElement('h6');
+                title.className = 'fw-bold text-secondary';
+                title.textContent = chart.title;
+                
+                const img = document.createElement('img');
+                img.src = `data:image/png;base64,${chart.base64_data}`;
+                img.alt = chart.title;
+                img.className = 'img-fluid shadow-sm';
+
+                wrapper.appendChild(title);
+                wrapper.appendChild(img);
+                chartsContainer.appendChild(wrapper);
+            });
+        } else {
+            chartsContainer.innerHTML = '<p class="text-muted">無圖表數據</p>';
+        }
+    }
+
+    // --- 批次預測邏輯 (暫時不需 Key，若需要可比照辦理) ---
+    document.getElementById('batchForm').addEventListener('submit', async function(e) {
+        e.preventDefault();
+        const fileInput = document.getElementById('csvFile');
+        if (!fileInput.files[0]) {
+            alert('請選擇 CSV 檔案');
+            return;
+        }
+
+        toggleLoading(true);
+        const formData = new FormData();
+        formData.append('file', fileInput.files[0]);
+
+        try {
+            const response = await fetch(`${API_BASE}/predict_batch`, {
+                method: 'POST',
+                body: formData
+            });
+
+            const result = await response.json();
+
+            if (response.ok && result.status === 'success') {
+                renderBatchResult(result.data);
+            } else {
+                alert('批次處理失敗: ' + (result.message || '未知錯誤'));
+            }
+        } catch (error) {
+            console.error(error);
+            alert('上傳發生錯誤');
+        } finally {
+            toggleLoading(false);
+        }
+    });
+
+    function renderBatchResult(items) {
+        document.getElementById('batchResult').style.display = 'block';
+        document.getElementById('batchCount').textContent = `${items.length} 筆`;
+        
+        const tbody = document.getElementById('batchTableBody');
+        tbody.innerHTML = '';
+
+        items.forEach(item => {
+            const tr = document.createElement('tr');
+            const prob = item.probability !== undefined ? (item.probability * 100).toFixed(1) + '%' : 'N/A';
+            const isRisky = item.probability > 0.5;
+            
+            tr.innerHTML = `
+                <td>${item.id || item.CustomerId || 'N/A'}</td>
+                <td class="${isRisky ? 'text-danger fw-bold' : 'text-success'}">${prob}</td>
+                <td>${isRisky ? '<span class="badge bg-danger">流失</span>' : '<span class="badge bg-success">留存</span>'}</td>
+                <td>${item.retention_strategy || '-'}</td>
+                <td>${item.potential_loss || '-'}</td>
+                <td>${item.cost || '-'}</td>
+                <td class="fw-bold">${item.expected_roi || '-'}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+</script>
+
+</body>
+</html>

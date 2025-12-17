@@ -65,6 +65,15 @@ def predict_churn():
         data = request.get_json()
         if not data: return ApiResponse.error("無效的 JSON")
         
+        # --- 新增：動態檢查 API Key ---
+        client_api_key = request.headers.get('X-Gemini-API-Key')
+        if client_api_key:
+            # 如果前端有傳 Key，就暫時建立一個新的 Gemini Service 實例
+            gemini_service = GeminiServiceV2(client_api_key)
+        else:
+            # 否則使用預設的全域實例
+            gemini_service = GEMINI
+        
         # 呼叫 Service V2
         input_df = pd.DataFrame([data])
         result = SERVICE.predict(input_df)
@@ -73,10 +82,12 @@ def predict_churn():
         # 2. [V2 核心] 呼叫 ROI 服務
         roi_data = BUSINESS_RULES.calculate_churn_roi(data, proba)
 
-        # 呼叫 Gemini V2
+        # 呼叫 Gemini V2 (使用剛才決定的 gemini_service)
         shap_values = result.get('local_shap_values', {})
         shap_text = "\n".join([f"{k}: {v:.4f}" for k,v in shap_values.items()])
-        ai_exp = GEMINI.generate_churn_explanation(data, result, shap_text)
+        
+        # 改用 gemini_service 呼叫
+        ai_exp = gemini_service.generate_churn_explanation(data, result, shap_text)
         
         # 繪圖
         charts = []

@@ -7,6 +7,7 @@ logger = logging.getLogger('GeminiServiceV2')
 logger.setLevel(logging.INFO)
 
 class GeminiServiceV2:
+    # 🔴 修改這裡：將預設值改為 "gemini-2.0-flash" (根據您測試結果可用的模型)
     def __init__(self, api_key: str, model_name: str = "gemini-1.5-flash"):
         if not api_key:
             logger.warning("⚠️ Gemini API Key 未設定")
@@ -43,7 +44,13 @@ class GeminiServiceV2:
         """
 
         try:
+            # 嘗試呼叫 AI
             response = self.client.models.generate_content(model=self.model_name, contents=prompt)
+            if not response.text:
+                return "AI 回傳內容為空。"
             return response.text.strip()
-        except Exception:
-            return "AI 分析暫時無法取得。"
+        except Exception as e:
+            # 🔥 重要：將真正的錯誤印在終端機，方便除錯
+            print(f"❌ Gemini Error Details: {str(e)}")
+            # 回傳包含錯誤部分的訊息，讓前端也能稍微看到
+            return f"AI 分析失敗: {str(e)[:50]}..."
