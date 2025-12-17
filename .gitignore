@@ -1,0 +1,17 @@
+# .gitignore
+
+# 忽略機密檔案
+.env
+.flaskenv
+
+# 忽略 Python 編譯檔
+__pycache__/
+*.pyc
+
+# 忽略資料庫 (本地測試用)
+app.db
+*.sqlite3
+
+# 忽略虛擬環境
+venv/
+env/
