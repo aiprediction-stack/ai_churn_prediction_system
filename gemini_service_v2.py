@@ -8,7 +8,7 @@ logger.setLevel(logging.INFO)
 
 class GeminiServiceV2:
     # 🔴 修改這裡：將預設值改為 "gemini-2.0-flash" (根據您測試結果可用的模型)
-    def __init__(self, api_key: str, model_name: str = "gemini-1.5-flash"):
+    def __init__(self, api_key: str, model_name: str = "gemini-2.5-flash-lite"):
         if not api_key:
             logger.warning("⚠️ Gemini API Key 未設定")
             self.client = None
