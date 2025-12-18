@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI 銀行客戶流失預測系統</title>
+    <title>AI 銀行客戶流失預測系統 (V3 Model)</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <style>
@@ -29,7 +29,7 @@
 
 <div class="loading-overlay" id="loadingOverlay">
     <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;"></div>
-    <div class="mt-2 fw-bold text-primary">AI 正在分析中，請稍候...</div>
+    <div class="mt-2 fw-bold text-primary">AI 正在分析 V3 模型特徵...</div>
 </div>
 
 <div class="container py-5">
@@ -37,7 +37,7 @@
         <div class="col-lg-10">
             <div class="text-center mb-4">
                 <h1 class="display-5 fw-bold text-primary"><i class="fas fa-university me-2"></i>AI 銀行客戶流失預測系統</h1>
-                <p class="lead text-muted">結合機器學習與生成式 AI 的智能決策平台</p>
+                <p class="lead text-muted">Powered by XGBoost V3 & SHAP Interpretation</p>
             </div>
 
             <div class="card bg-light mb-4 border-primary border-opacity-25">
@@ -74,7 +74,7 @@
                     <div class="row">
                         <div class="col-md-4">
                             <div class="card">
-                                <div class="card-header"><i class="fas fa-edit me-2"></i>客戶特徵輸入</div>
+                                <div class="card-header"><i class="fas fa-edit me-2"></i>客戶特徵輸入 (V3)</div>
                                 <div class="card-body">
                                     <form id="singlePredictionForm">
                                         <div class="mb-3">
@@ -84,16 +84,16 @@
                                         <div class="mb-3">
                                             <label class="form-label">地區 (Geography)</label>
                                             <select class="form-select" name="Geography">
-                                                <option value="France">France</option>
-                                                <option value="Germany">Germany</option>
-                                                <option value="Spain">Spain</option>
+                                                <option value="France">France (法國)</option>
+                                                <option value="Germany">Germany (德國)</option>
+                                                <option value="Spain">Spain (西班牙)</option>
                                             </select>
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label">性別 (Gender)</label>
                                             <select class="form-select" name="Gender">
-                                                <option value="Male">Male</option>
-                                                <option value="Female">Female</option>
+                                                <option value="Male">Male (男)</option>
+                                                <option value="Female">Female (女)</option>
                                             </select>
                                         </div>
                                         <div class="mb-3">
@@ -107,6 +107,7 @@
                                         <div class="mb-3">
                                             <label class="form-label">帳戶餘額 (Balance)</label>
                                             <input type="number" class="form-control" name="Balance" value="50000" step="0.01" required>
+                                            <div class="form-text text-muted">模型將自動轉換為 Log 特徵</div>
                                         </div>
                                         <div class="mb-3">
                                             <label class="form-label">產品數量 (NumOfProducts)</label>
@@ -168,7 +169,7 @@
                                 </div>
 
                                 <div class="card">
-                                    <div class="card-header"><i class="fas fa-image me-2"></i>特徵影響力 (SHAP Values)</div>
+                                    <div class="card-header"><i class="fas fa-image me-2"></i>特徵影響力 (SHAP V3)</div>
                                     <div class="card-body text-center">
                                         <div id="chartsContainer">
                                             </div>
@@ -178,7 +179,7 @@
                             
                             <div id="defaultPrompt" class="text-center py-5 text-muted">
                                 <i class="fas fa-arrow-left fa-3x mb-3"></i>
-                                <h4>請填寫左側表單並點擊預測</h4>
+                                <h4>請填寫左側 V3 表單並點擊預測</h4>
                             </div>
                         </div>
                     </div>
@@ -193,7 +194,7 @@
                                     <input type="file" class="form-control" id="csvFile" name="file" accept=".csv" required>
                                     <button class="btn btn-success" type="submit"><i class="fas fa-upload me-2"></i>上傳並分析 ROI</button>
                                 </div>
-                                <small class="text-muted">檔案必須包含訓練時的欄位 (CreditScore, Geography, Gender, Age, Tenure, Balance, NumOfProducts, HasCrCard, IsActiveMember, EstimatedSalary)。</small>
+                                <small class="text-muted">檔案必須包含：CreditScore, Geography, Gender, Age, Tenure, Balance, NumOfProducts, HasCrCard, IsActiveMember, EstimatedSalary</small>
                             </form>
                         </div>
                     </div>
@@ -247,7 +248,6 @@
     const apiKeyInput = document.getElementById('apiKeyInput');
     const saveKeyBtn = document.getElementById('saveKeyBtn');
 
-    // 1. 頁面載入時讀取 localStorage
     window.addEventListener('load', () => {
         const savedKey = localStorage.getItem('gemini_api_key');
         if (savedKey) {
@@ -255,12 +255,11 @@
         }
     });
 
-    // 2. 點擊按鈕時儲存
     saveKeyBtn.addEventListener('click', () => {
         const key = apiKeyInput.value.trim();
         if (key) {
             localStorage.setItem('gemini_api_key', key);
-            alert('API Key 已儲存於瀏覽器！下次預測時將自動帶入。');
+            alert('API Key 已儲存！');
         } else {
             localStorage.removeItem('gemini_api_key');
             alert('API Key 已清除。');
@@ -274,7 +273,6 @@
         document.getElementById('singleResult').style.display = 'none';
         document.getElementById('defaultPrompt').style.display = 'none';
 
-        // 收集表單數據
         const formData = new FormData(e.target);
         const data = Object.fromEntries(formData.entries());
 
@@ -283,9 +281,7 @@
             if (data[key]) data[key] = Number(data[key]);
         });
 
-        // 準備 Headers
         const headers = { 'Content-Type': 'application/json' };
-        // 🔴 關鍵：從 localStorage 取出 Key 並放入 Header
         const savedKey = localStorage.getItem('gemini_api_key');
         if (savedKey) {
             headers['X-Gemini-API-Key'] = savedKey;
@@ -359,26 +355,23 @@
             data.charts.forEach(chart => {
                 const wrapper = document.createElement('div');
                 wrapper.className = 'mb-4';
-                
                 const title = document.createElement('h6');
                 title.className = 'fw-bold text-secondary';
                 title.textContent = chart.title;
-                
                 const img = document.createElement('img');
                 img.src = `data:image/png;base64,${chart.base64_data}`;
                 img.alt = chart.title;
                 img.className = 'img-fluid shadow-sm';
-
                 wrapper.appendChild(title);
                 wrapper.appendChild(img);
                 chartsContainer.appendChild(wrapper);
             });
         } else {
-            chartsContainer.innerHTML = '<p class="text-muted">無圖表數據</p>';
+            chartsContainer.innerHTML = '<p class="text-muted">無圖表數據 (請確認 SHAP 服務是否正常)</p>';
         }
     }
 
-    // --- 批次預測邏輯 (暫時不需 Key，若需要可比照辦理) ---
+    // --- 批次預測邏輯 ---
     document.getElementById('batchForm').addEventListener('submit', async function(e) {
         e.preventDefault();
         const fileInput = document.getElementById('csvFile');
@@ -415,7 +408,6 @@
     function renderBatchResult(items) {
         document.getElementById('batchResult').style.display = 'block';
         document.getElementById('batchCount').textContent = `${items.length} 筆`;
-        
         const tbody = document.getElementById('batchTableBody');
         tbody.innerHTML = '';
 

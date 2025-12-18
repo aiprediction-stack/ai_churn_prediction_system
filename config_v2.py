@@ -20,7 +20,7 @@ class Config:
     # 模型路徑配置
     # 指向 projects/customer_churn_bank_code
     MODEL_ROOT = os.path.join(BASE_DIR, 'projects', 'customer_churn_bank_code')
-    MODEL_BANK_PATH = os.path.join(MODEL_ROOT, 'customer_churn_bank_model.joblib')
+    MODEL_BANK_PATH = os.path.join(MODEL_ROOT, 'xgb_model.json')
     MODEL_META_DIR = MODEL_ROOT
 
 class DevelopmentConfig(Config):

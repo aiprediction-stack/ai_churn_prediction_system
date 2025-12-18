@@ -21,3 +21,5 @@ google-genai>=0.2.0           # <-- 改成這一行 (支援 genai.Client)
 
 # Server (Production use)
 gunicorn>=21.2.0       # 部署時建議使用
+
+xgboost
